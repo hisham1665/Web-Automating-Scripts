@@ -76,17 +76,16 @@
       await delay(1000);
 
       // ✅ Step 4: Wait for and then click the "Insert" button to submit the URL.
-      const confirmBtn = await waitForElement('button[type="submit"]');
+      // The button's type is "submit" and it is not disabled.
+      // We will rely on these attributes instead of the text content.
+      const confirmBtn = await waitForElement('button[type="submit"]:not(:disabled)');
       
       if (!confirmBtn) {
-        console.error('❌ "Insert" button not found. Stopping script.');
+        console.error('❌ "Insert" button not found or is disabled. Stopping script.');
         break;
       }
       
-      if (confirmBtn.textContent.trim().toLowerCase() !== 'insert') {
-          console.warn('⚠️ Found a button, but text does not match "Insert". Proceeding anyway...');
-      }
-
+      console.log(`✅ Clicking button with text: ${confirmBtn.textContent.trim()}`);
       confirmBtn.click();
       console.log(`✅ Successfully added: ${currentUrl}`);
       
