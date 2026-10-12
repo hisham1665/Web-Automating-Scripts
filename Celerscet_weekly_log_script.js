@@ -1,207 +1,173 @@
+
 (async () => {
-    const tasks = [
-        "Integrated additional FastAPI backend APIs with the Flutter application and mapped the API responses to the required application models.",
-        "Implemented Flutter data models for handling structured responses received from the FastAPI backend.",
-        "Improved asynchronous API calls and loading-state handling across the application.",
-        "Added error handling for network failures, invalid API responses, and server-side errors.",
-        "Tested the API integration with different input conditions and backend responses and fixed integration issues."
-    ];
+    try {
+        const tasks = [
+            "Performed functional testing of the major Flutter application modules.",
+            "Identified and reproduced issues related to API communication and application state.",
+            "Debugged FastAPI errors and corrected incorrect request and response handling.",
+            "Fixed Flutter UI, navigation, and data-handling issues identified during testing.",
+            "Performed regression testing after applying the fixes."
+        ];
 
-    const rows = [...document.querySelectorAll(".iw-table tbody tr")];
+        const rows = [
+            ...document.querySelectorAll(".iw-table tbody tr")
+        ];
 
-    if (rows.length !== 5) {
-        alert(`Expected 5 weekday rows, but found ${rows.length}. Found: ${rows.length}`);
-        return;
-    }
-
-    // --------------------------------------------------
-    // Set React-controlled input values
-    // --------------------------------------------------
-
-    function setInputValue(input, value) {
-        const setter = Object.getOwnPropertyDescriptor(
-            HTMLInputElement.prototype,
-            "value"
-        ).set;
-
-        setter.call(input, value);
-
-        input.dispatchEvent(
-            new Event("input", { bubbles: true })
-        );
-
-        input.dispatchEvent(
-            new Event("change", { bubbles: true })
-        );
-
-        input.dispatchEvent(
-            new Event("blur", { bubbles: true })
-        );
-    }
-
-    // --------------------------------------------------
-    // Select a specific option in the time picker
-    // --------------------------------------------------
-
-    function selectOption(listbox, value) {
-        const options = [...listbox.querySelectorAll('[role="option"]')];
-
-        const option = options.find(
-            el => el.textContent.trim() === value
-        );
-
-        if (!option) {
+        if (rows.length !== 5) {
             throw new Error(
-                `Could not find "${value}" in ${listbox.getAttribute("aria-label")} picker`
+                `Expected 5 weekday rows, found ${rows.length}.`
             );
         }
 
-        option.click();
-    }
+        const sleep = ms =>
+            new Promise(resolve => setTimeout(resolve, ms));
 
-    // --------------------------------------------------
-    // Set time using the custom wheel picker
-    // --------------------------------------------------
+        // Update React-controlled inputs using the native setter.
+        function setInputValue(input, value) {
+            const setter = Object.getOwnPropertyDescriptor(
+                HTMLInputElement.prototype,
+                "value"
+            ).set;
 
-    async function setTime(button, hour, minute, period) {
+            setter.call(input, String(value));
 
-        // Open picker
-        button.click();
+            input.dispatchEvent(
+                new Event("input", { bubbles: true })
+            );
 
-        await new Promise(resolve => setTimeout(resolve, 150));
+            input.dispatchEvent(
+                new Event("change", { bubbles: true })
+            );
 
-        const dialog = document.querySelector(
-            '.tf__pop[role="dialog"]'
-        );
-
-        if (!dialog) {
-            throw new Error("Time picker dialog did not open.");
+            input.dispatchEvent(
+                new Event("blur", { bubbles: true })
+            );
         }
 
-        // Find the three wheels
-        const hourWheel = dialog.querySelector(
-            '.tf__wheel[aria-label="Hour"]'
-        );
+        // Set a time using the actual custom input-based picker.
+        async function setTime(button, hour, minute, period) {
+            button.click();
+            await sleep(150);
 
-        const minuteWheel = dialog.querySelector(
-            '.tf__wheel[aria-label="Minute"]'
-        );
+            const dialog = document.querySelector(
+                '.tf__pop[role="dialog"]'
+            );
 
-        const periodWheel = dialog.querySelector(
-            '.tf__wheel[aria-label="AM or PM"]'
-        );
+            if (!dialog) {
+                throw new Error(
+                    `Picker did not open for ${button.getAttribute("aria-label")}.`
+                );
+            }
 
-        if (!hourWheel || !minuteWheel || !periodWheel) {
-            throw new Error("Could not find time picker wheels.");
-        }
+            const hourInput = dialog.querySelector(
+                '.tf__col[data-field="h"] input.tf__box'
+            );
 
-        // Select hour
-        selectOption(
-            hourWheel,
-            String(hour)
-        );
+            const minuteInput = dialog.querySelector(
+                '.tf__col[data-field="m"] input.tf__box'
+            );
 
-        await new Promise(resolve => setTimeout(resolve, 50));
+            const periodGroup = dialog.querySelector(
+                '.tf__seg[aria-label="AM or PM"]'
+            );
 
-        // Select minute
-        selectOption(
-            minuteWheel,
-            String(minute).padStart(2, "0")
-        );
+            if (!hourInput || !minuteInput || !periodGroup) {
+                throw new Error(
+                    "Could not find hour, minute, or AM/PM controls."
+                );
+            }
 
-        await new Promise(resolve => setTimeout(resolve, 50));
+            // Enter hour and minute.
+            setInputValue(hourInput, hour);
+            await sleep(50);
 
-        // Select AM / PM
-        selectOption(
-            periodWheel,
-            period
-        );
+            setInputValue(minuteInput, String(minute).padStart(2, "0"));
+            await sleep(50);
 
-        await new Promise(resolve => setTimeout(resolve, 50));
+            // Select AM or PM.
+            const periodButton = [
+                ...periodGroup.querySelectorAll("button")
+            ].find(
+                btn => btn.textContent.trim() === period
+            );
 
-        // Click OK
-        const okButton = [...dialog.querySelectorAll("button")]
-            .find(
+            if (!periodButton) {
+                throw new Error(
+                    `Could not find ${period} button.`
+                );
+            }
+
+            periodButton.click();
+            await sleep(50);
+
+            // Confirm the selected time.
+            const okButton = [
+                ...dialog.querySelectorAll("button")
+            ].find(
                 btn => btn.textContent.trim().toUpperCase() === "OK"
             );
 
-        if (!okButton) {
-            throw new Error("Could not find OK button.");
+            if (!okButton) {
+                throw new Error("Could not find the OK button.");
+            }
+
+            okButton.click();
+            await sleep(150);
         }
 
-        okButton.click();
+        // Fill descriptions.
+        rows.forEach((row, index) => {
+            const input = row.querySelector(
+                'input[placeholder="What you worked on"]'
+            );
 
-        await new Promise(resolve => setTimeout(resolve, 150));
-    }
+            if (!input) {
+                throw new Error(
+                    `Task input missing on weekday row ${index + 1}.`
+                );
+            }
 
-    // --------------------------------------------------
-    // Fill daily work descriptions
-    // --------------------------------------------------
-
-    rows.forEach((row, index) => {
-        const input = row.querySelector(
-            'input[placeholder="What you worked on"]'
-        );
-
-        if (input) {
             setInputValue(input, tasks[index]);
+        });
+
+        // Set the working hours for each weekday.
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+
+            const inButton = row.querySelector(
+                'button[aria-label="In time"]'
+            );
+
+            const outButton = row.querySelector(
+                'button[aria-label="Out time"]'
+            );
+
+            if (!inButton || !outButton) {
+                throw new Error(
+                    `Time buttons missing on weekday row ${i + 1}.`
+                );
+            }
+
+            console.log(`Filling weekday row ${i + 1}...`);
+
+            await setTime(inButton, 9, 0, "AM");
+            await setTime(outButton, 4, 0, "PM");
         }
-    });
 
-    // --------------------------------------------------
-    // Set 9:00 AM → 4:00 PM for each day
-    // --------------------------------------------------
+        console.log("Week 10 autofill completed. Not submitted.");
 
-    for (let i = 0; i < rows.length; i++) {
-
-        const row = rows[i];
-
-        const inButton = row.querySelector(
-            'button[aria-label="In time"]'
+        alert(
+            "Week 10 has been filled!\n\n" +
+            "In: 9:00 AM\n" +
+            "Out: 4:00 PM\n" +
+            "Tasks: Monday–Friday\n\n" +
+            "Please review before manually submitting."
         );
 
-        const outButton = row.querySelector(
-            'button[aria-label="Out time"]'
-        );
-
-        if (!inButton || !outButton) {
-            console.warn(`Missing time buttons for row ${i + 1}`);
-            continue;
-        }
-
-        console.log(`Setting Monday-Friday row ${i + 1}...`);
-
-        // 9:00 AM
-        await setTime(
-            inButton,
-            9,
-            0,
-            "AM"
-        );
-
-        // 4:00 PM
-        await setTime(
-            outButton,
-            4,
-            0,
-            "PM"
-        );
+    } catch (error) {
+        console.error("Week 10 autofill failed:", error);
+        alert(`Autofill failed: ${error.message}`);
     }
-
-    console.log("=================================");
-    console.log("✅ WEEK 10 FILLED");
-    console.log("🕘 In: 9:00 AM");
-    console.log("🕓 Out: 4:00 PM");
-    console.log("📝 Monday-Friday tasks filled");
-    console.log("⚠️ NOT SUBMITTED");
-    console.log("=================================");
-
-    alert(
-        "Week 10 has been filled.\n\n" +
-        "In: 9:00 AM\n" +
-        "Out: 4:00 PM\n\n" +
-        "Review everything before manually submitting."
-    );
 })();
 
 
